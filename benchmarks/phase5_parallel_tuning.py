@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import torch
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
@@ -82,16 +83,24 @@ def evaluate_solution(args):
     return placementProcedure(parts_dict, nb_parts, nb_machines, thresholds, chromosome, instance_parts, backend)
 
 
+
+def _sync_if_cuda(backend_name):
+    if "cuda" in backend_name and torch.cuda.is_available():
+        torch.cuda.synchronize()
+
 def run_config(parts_dict, nb_parts, nb_machines, thresholds, instance_parts, backend, chromosomes, warmup, workers, chunksize):
     tasks = [(parts_dict, nb_parts, nb_machines, thresholds, c, instance_parts, backend) for c in chromosomes]
 
     if warmup > 0:
         with ThreadPoolExecutor(max_workers=workers) as ex:
             list(ex.map(evaluate_solution, tasks[:warmup], chunksize=chunksize))
+        _sync_if_cuda(backend.name)
 
+    _sync_if_cuda(backend.name)
     start = time.perf_counter()
     with ThreadPoolExecutor(max_workers=workers) as ex:
         list(ex.map(evaluate_solution, tasks[warmup:], chunksize=chunksize))
+    _sync_if_cuda(backend.name)
     elapsed = time.perf_counter() - start
     measured = len(chromosomes) - warmup
     return (elapsed / measured) * 1000, measured / elapsed, elapsed
@@ -218,4 +227,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
