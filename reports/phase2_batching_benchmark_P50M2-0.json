@@ -1,0 +1,31 @@
+{
+  "config": {
+    "nb_parts": 50,
+    "nb_machines": 2,
+    "inst_number": 0,
+    "decodes": 18,
+    "warmup": 3,
+    "seed": 42,
+    "json_out": "reports\\phase2_batching_benchmark_P50M2-0.json",
+    "md_out": "reports\\PHASE2_BATCHING_REPORT_P50M2-0.md"
+  },
+  "results": [
+    {
+      "backend": "torch_cuda_unbatched",
+      "decodes": 15,
+      "warmup": 3,
+      "total_seconds": 4.014461999991909,
+      "ms_per_decode": 267.6307999994606,
+      "decodes_per_sec": 3.73649071781729
+    },
+    {
+      "backend": "torch_cuda_batched",
+      "decodes": 15,
+      "warmup": 3,
+      "total_seconds": 4.571330799954012,
+      "ms_per_decode": 304.7553866636008,
+      "decodes_per_sec": 3.2813201792683437
+    }
+  ],
+  "speedup_unbatched_to_batched": 0.8781823446319602
+}

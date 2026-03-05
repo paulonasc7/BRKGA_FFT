@@ -1,0 +1,49 @@
+{
+  "config": {
+    "parts_dir": "data/partsMatrices",
+    "sample_parts": 24,
+    "part_selection": "largest",
+    "bin_length": 768,
+    "bin_width": 768,
+    "densities": [
+      0.05,
+      0.2,
+      0.4
+    ],
+    "iterations": 12,
+    "warmup": 3,
+    "json_out": "reports\\phase0_large_768.json",
+    "md_out": "reports\\PHASE0_BACKEND_DECISION_768.md"
+  },
+  "cases": 72,
+  "results": [
+    {
+      "backend": "torch",
+      "available": true,
+      "device": "NVIDIA GeForce GTX 1650 Ti",
+      "cases": 72,
+      "iterations": 12,
+      "warmup": 3,
+      "total_seconds": 8.529743200168014,
+      "ms_per_case_iter": 9.872387963157424,
+      "gops_like": 101.29261570066745,
+      "notes": "ok"
+    },
+    {
+      "backend": "cupy",
+      "available": true,
+      "device": "NVIDIA GeForce GTX 1650 Ti",
+      "cases": 72,
+      "iterations": 12,
+      "warmup": 3,
+      "total_seconds": 9.680548300035298,
+      "ms_per_case_iter": 11.204338310226039,
+      "gops_like": 89.25114293338629,
+      "notes": "ok"
+    }
+  ],
+  "decision": {
+    "backend": "torch",
+    "rationale": "Torch significantly faster than CuPy on measured workload."
+  }
+}

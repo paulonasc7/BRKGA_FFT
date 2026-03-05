@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Benchmarks / outputs (optional)
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.npz
+*.npy
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# Temporary folders
+.tmp/
+temp/
+tmp/

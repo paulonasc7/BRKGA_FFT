@@ -1,0 +1,49 @@
+{
+  "config": {
+    "parts_dir": "data/partsMatrices",
+    "sample_parts": 24,
+    "part_selection": "largest",
+    "bin_length": 512,
+    "bin_width": 512,
+    "densities": [
+      0.05,
+      0.2,
+      0.4
+    ],
+    "iterations": 20,
+    "warmup": 4,
+    "json_out": "reports\\phase0_large_512.json",
+    "md_out": "reports\\PHASE0_BACKEND_DECISION_512.md"
+  },
+  "cases": 72,
+  "results": [
+    {
+      "backend": "torch",
+      "available": true,
+      "device": "NVIDIA GeForce GTX 1650 Ti",
+      "cases": 72,
+      "iterations": 20,
+      "warmup": 4,
+      "total_seconds": 6.364238400012255,
+      "ms_per_case_iter": 4.419610000008511,
+      "gops_like": 226.26430838876607,
+      "notes": "ok"
+    },
+    {
+      "backend": "cupy",
+      "available": true,
+      "device": "NVIDIA GeForce GTX 1650 Ti",
+      "cases": 72,
+      "iterations": 20,
+      "warmup": 4,
+      "total_seconds": 6.644857699982822,
+      "ms_per_case_iter": 4.61448451387696,
+      "gops_like": 216.70892967410313,
+      "notes": "ok"
+    }
+  ],
+  "decision": {
+    "backend": "cupy",
+    "rationale": "CuPy preferred by policy (no ML planned) and performance within threshold."
+  }
+}
