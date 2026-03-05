@@ -10,7 +10,6 @@ __pycache__/
 *.ckpt
 *.onnx
 *.npz
-*.npy
 
 # OS / IDE
 .DS_Store
