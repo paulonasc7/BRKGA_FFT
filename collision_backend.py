@@ -1,6 +1,43 @@
 import numpy as np
 import torch
 
+DEFAULT_TORCH_TF32 = False
+DEFAULT_CUFFT_PLAN_CACHE = 32
+
+
+def _parse_bool(value):
+    return str(value).strip().lower() in {"1", "true", "t", "yes", "y", "on"}
+
+
+def _env_or_default(name, default):
+    import os
+
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value
+
+
+def configure_torch_runtime(tf32=None, cufft_plan_cache=None):
+    if tf32 is None:
+        tf32 = _parse_bool(_env_or_default("ABRKGA_TORCH_TF32", DEFAULT_TORCH_TF32))
+    else:
+        tf32 = _parse_bool(tf32)
+
+    if cufft_plan_cache is None:
+        cufft_plan_cache = int(_env_or_default("ABRKGA_CUFFT_PLAN_CACHE", DEFAULT_CUFFT_PLAN_CACHE))
+    else:
+        cufft_plan_cache = int(cufft_plan_cache)
+
+    torch.backends.cuda.matmul.allow_tf32 = tf32
+    torch.backends.cudnn.allow_tf32 = tf32
+    try:
+        torch.backends.cuda.cufft_plan_cache.max_size = cufft_plan_cache
+    except Exception:
+        pass
+
+    return tf32, cufft_plan_cache
+
 
 class BaseCollisionBackend:
     def __init__(self, name):
@@ -136,6 +173,9 @@ class NumpyCollisionBackend(BaseCollisionBackend):
 
 
 def create_collision_backend(name):
+    if name.startswith("torch_"):
+        configure_torch_runtime()
+
     if name == "torch_gpu":
         if not torch.cuda.is_available():
             raise RuntimeError("torch_gpu backend selected but CUDA is unavailable.")

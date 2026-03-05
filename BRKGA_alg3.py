@@ -3,18 +3,20 @@ import random
 import numpy as np
 from placement import placementProcedure
 from binClassInitialSol import BuildingPlate
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import time 
 import sys
 import torch
 import itertools
 import pandas as pd
 from collision_backend import create_collision_backend
+import os
 torch.set_num_threads(1)
 
 class BRKGA():
     def __init__(self, Parts, nbParts, nbMachines, thresholds, instanceParts, initialSol,
-                 collision_backend, num_generations = 200, num_individuals=100, num_elites = 12, num_mutants = 18, eliteCProb = 0.7):
+                 collision_backend, eval_mode="thread", eval_workers=4, eval_chunksize=1,
+                 num_generations = 200, num_individuals=100, num_elites = 12, num_mutants = 18, eliteCProb = 0.7):
 
         # Input
         self.Parts = Parts
@@ -24,6 +26,9 @@ class BRKGA():
         self.instanceParts = instanceParts
         self.initialSol = initialSol
         self.collision_backend = collision_backend
+        self.eval_mode = eval_mode
+        self.eval_workers = int(eval_workers) if eval_workers else 0
+        self.eval_chunksize = int(eval_chunksize) if eval_chunksize else 1
         
         # Configuration
         self.num_generations = num_generations
@@ -58,9 +63,23 @@ class BRKGA():
         return decoder
 
     def cal_fitness(self, population):
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            fitness_list = list(executor.map(self.evaluate_solution, population))
-        return fitness_list
+        if self.eval_mode == "serial" or self.eval_workers <= 1:
+            return [self.evaluate_solution(sol) for sol in population]
+
+        if self.eval_mode == "thread":
+            max_workers = self.eval_workers if self.eval_workers > 0 else min(32, (os.cpu_count() or 4))
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                return list(executor.map(self.evaluate_solution, population))
+
+        if self.eval_mode == "process":
+            # CUDA + process pools typically cause context duplication/oversubscription.
+            if "cuda" in self.collision_backend.name:
+                raise ValueError("eval_mode=process is not supported with CUDA backends. Use thread or serial.")
+            max_workers = self.eval_workers if self.eval_workers > 0 else min(32, (os.cpu_count() or 4))
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                return list(executor.map(self.evaluate_solution, population, chunksize=self.eval_chunksize))
+
+        raise ValueError(f"Unsupported eval_mode: {self.eval_mode}")
 
     def partition(self, population, fitness_list):
         sorted_indexs = np.argsort(fitness_list)
@@ -151,6 +170,9 @@ if __name__ == "__main__":
     instNumber = int(sys.argv[3])
     #instNumber = 0
     backend_name = sys.argv[4] if len(sys.argv) > 4 else "torch_gpu"
+    eval_mode = sys.argv[5] if len(sys.argv) > 5 else "thread"
+    eval_workers = int(sys.argv[6]) if len(sys.argv) > 6 else 4
+    eval_chunksize = int(sys.argv[7]) if len(sys.argv) > 7 else 1
     collision_backend = create_collision_backend(backend_name)
 
     '''DEFINE DATA'''
@@ -368,6 +390,7 @@ if __name__ == "__main__":
         for i in range(1):
             model = BRKGA(data, nbParts, nbMachines, thresholds, instanceParts, array,
                   collision_backend=collision_backend,
+                  eval_mode=eval_mode, eval_workers=eval_workers, eval_chunksize=eval_chunksize,
                   num_generations = 30, num_individuals=mult*nbParts, num_elites = math.ceil(mult*nbParts*0.1), num_mutants = math.ceil(mult*nbParts*0.15), eliteCProb = 0.70)
             model.fit(verbose = True)
 
